@@ -39,7 +39,8 @@ const WhitelistForm = ({ data, signer, provider, chainId }) => {
       return;
     }
     const contract = new ethers.Contract(contractAddress, abi, signer);
-
+    const amountInEther = "0.1"; // Example: 0.1 ETH
+    const amountInWei = ethers.parseEther(amountInEther);
     const { refundAddress, zroPaymentAddress } = formValues;
     try {
       const transaction = await contract.sendToAptos(
@@ -50,7 +51,10 @@ const WhitelistForm = ({ data, signer, provider, chainId }) => {
           refundAddress,
           zroPaymentAddress,
         },
-        formValues._adapterParams
+        formValues._adapterParams,
+        {
+          value: amountInWei,
+        }
       );
       setTransactionHash(transaction.hash);
     } catch (err) {
