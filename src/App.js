@@ -1,6 +1,7 @@
 import logo from "./logo.svg";
 import "./App.css";
 import WhitelistForm from "./Components/sendToAptos.js";
+import RemoteForm from "./Components/setRemoteCoin.js";
 import { useState } from "react";
 import { ethers } from "ethers";
 
@@ -54,6 +55,7 @@ function App() {
           provider={provider}
           chainId={chainId}
         />
+        <RemoteForm />
       </header>
     </div>
   );
