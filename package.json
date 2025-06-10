@@ -2,12 +2,18 @@
   "name": "layer_zero_sample_fe",
   "version": "0.1.0",
   "private": true,
+  "globals": [
+    "BigInt"
+  ],
   "dependencies": {
+    "@layerzerolabs/lz-v2-utilities": "^3.0.100",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "aptos": "^1.21.0",
     "buffer": "^6.0.3",
+    "ethers": "^6.14.3",
+    "ethers-decode-error": "^2.1.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-scripts": "5.0.1",
@@ -36,8 +42,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "ethers": "^6.13.2"
   }
 }

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Buffer } from "buffer";
 import { contractAddresses } from "../Constants";
+import { Options } from "@layerzerolabs/lz-v2-utilities";
 const { ethers } = require("ethers");
 
 const RemoteForm = () => {
@@ -10,6 +11,7 @@ const RemoteForm = () => {
     _remoteAddress: "",
     _aptosBridgeAddress: "",
     _remoteBridgeAddress: "",
+    _extra_options: "",
   });
   const chainId = 97;
   const contractAddress =
@@ -55,15 +57,20 @@ const RemoteForm = () => {
     e.preventDefault();
     console.log();
     // Concatenate the byte arrays
-    const concatenated = ethers.concat([
-      formValues._aptosBridgeAddress,
-      contractAddress,
-    ]);
-
+    // const concatenated = ethers.concat([
+    //   formValues._aptosBridgeAddress,
+    //   contractAddress,
+    // ]);
+    let address = formValues._aptosBridgeAddress.toLowerCase();
+    const hex = address.replace("0x", "");
+    // Ensure the hex string is exactly 64 chars by padding or truncating
+    let paddedHex = hex.length > 64 ? hex.slice(-64) : hex.padStart(64, "0");
     // Encode the concatenated bytes as a hex string
-    const encoded = ethers.hexlify(concatenated);
-    console.log("combined=>", encoded);
-    setTrustedRemote(encoded);
+    // const encoded = ethers.hexlify(concatenated);
+    // console.log("combined=>", encoded);
+    paddedHex = convertToPaddedUint8Array(paddedHex, 32);
+    console.log("paddedHex==>", paddedHex);
+    setTrustedRemote(paddedHex);
   };
 
   const handleSubmit3 = async (e) => {
@@ -74,6 +81,23 @@ const RemoteForm = () => {
     );
     console.log(Array.from(remoteCoinAddrBytes));
     setRemoteAddress(Array.from(remoteCoinAddrBytes));
+  };
+
+  const handleSubmit4 = async (e) => {
+    e.preventDefault();
+    const options = Options.newOptions().addExecutorLzReceiveOption(
+      BigInt(formValues._max_fee)
+    );
+    const extra_options = options.toBytes();
+    console.log("extra_options ==>", extra_options);
+  };
+
+  const handleSubmit5 = async (e) => {
+    e.preventDefault();
+    const options = new Options().addExecutorLzReceiveOption(200000, 0);
+    const extra_options = options.toBytes();
+    console.log("extra_options ==>", extra_options);
+    setTrustedRemote(extra_options);
   };
 
   // Handle input change
@@ -125,6 +149,34 @@ const RemoteForm = () => {
             id="_remoteBridgeAddress"
             name="_remoteBridgeAddress"
             value={formValues._remoteBridgeAddress}
+            onChange={handleChange}
+          />
+        </div>
+        <button type="submit">Convert!</button>
+      </form>
+
+      <form onSubmit={handleSubmit4}>
+        <div>
+          <label htmlFor="_max_fee">Max fee:</label>
+          <input
+            type="text"
+            id="_max_fee"
+            name="_max_fee"
+            value={formValues._max_fee}
+            onChange={handleChange}
+          />
+        </div>
+        <button type="submit">Convert!</button>
+      </form>
+
+      <form onSubmit={handleSubmit5}>
+        <div>
+          <label htmlFor="_extra_options">_extra_options:</label>
+          <input
+            type="text"
+            id="_extra_options"
+            name="_extra_options"
+            value={formValues._extra_options}
             onChange={handleChange}
           />
         </div>

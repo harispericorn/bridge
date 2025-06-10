@@ -1,16 +1,20 @@
 import React, { useState } from "react";
 import { ethers } from "ethers";
 import { abi, contractAddresses } from "../Constants";
+import { Options } from "@layerzerolabs/lz-v2-utilities";
+import { ErrorDecoder } from "ethers-decode-error";
+const errorDecoder = ErrorDecoder.create([abi]);
 
 const WhitelistForm = ({ data, signer, provider, chainId }) => {
   // State to hold form values
   const [formValues, setFormValues] = useState({
-    _token: "",
+    _dstEid: "",
     _toAddress: "",
     _amountLD: "",
+    _minAmountLD: "",
+    _nativeFee: "",
+    _lzTokenFee: "",
     refundAddress: "",
-    zroPaymentAddress: "",
-    _adapterParams: "",
   });
 
   const [transactionHash, setTransactionHash] = useState(null);
@@ -39,26 +43,46 @@ const WhitelistForm = ({ data, signer, provider, chainId }) => {
       return;
     }
     const contract = new ethers.Contract(contractAddress, abi, signer);
-    const amountInEther = "0.1"; // Example: 0.1 ETH
-    const amountInWei = ethers.parseEther(amountInEther);
-    const { refundAddress, zroPaymentAddress } = formValues;
+    const amountInWei = ethers.parseEther(formValues._nativeFee);
+
+    let options = Options.newOptions()
+      .addExecutorLzReceiveOption(65000, 0)
+      .toBytes();
+    let dstEid = formValues._dstEid;
+    let toAddress = formValues._toAddress;
+    let amountLD = formValues._amountLD;
+    let zero = "0x";
+
+    console.log("zero=>", zero);
+    let minAmountLD = formValues._minAmountLD;
+    const sendParam = {
+      dstEid: dstEid,
+      to: toAddress,
+      amountLD: amountLD,
+      minAmountLD: minAmountLD,
+      extraOptions: options,
+      composeMsg: zero,
+      oftCmd: zero,
+    };
+    console.log("sendParam", sendParam);
+    const feeQuote = await contract.quoteSend(sendParam, false);
+    console.log(feeQuote);
+    const nativeFee = feeQuote.nativeFee;
+
     try {
-      const transaction = await contract.sendToAptos(
-        formValues._token,
-        formValues._toAddress,
-        formValues._amountLD,
+      const transaction = await contract.send(
+        sendParam,
+        { nativeFee: nativeFee, lzTokenFee: 0 },
+        formValues.refundAddress,
         {
-          refundAddress,
-          zroPaymentAddress,
-        },
-        formValues._adapterParams,
-        {
-          value: amountInWei,
+          value: nativeFee,
         }
       );
       setTransactionHash(transaction.hash);
-    } catch (err) {
-      console.log(err.message);
+    } catch (error) {
+      const decodedError = await errorDecoder.decode(error);
+      console.log(decodedError);
+      // Prints "Invalid swap with token contract address 0xabcd."
     }
   };
 
@@ -67,12 +91,12 @@ const WhitelistForm = ({ data, signer, provider, chainId }) => {
       {data ? (
         <form onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="_token">_token:</label>
+            <label htmlFor="_dstEid">_dstEid:</label>
             <input
               type="text"
-              id="_token"
-              name="_token"
-              value={formValues._token}
+              id="_dstEid"
+              name="_dstEid"
+              value={formValues._dstEid}
               onChange={handleChange}
             />
           </div>
@@ -97,6 +121,36 @@ const WhitelistForm = ({ data, signer, provider, chainId }) => {
             />
           </div>
           <div>
+            <label htmlFor="_minAmountLD">_minAmountLD:</label>
+            <input
+              type="text"
+              id="_minAmountLD"
+              name="_minAmountLD"
+              value={formValues._minAmountLD}
+              onChange={handleChange}
+            />
+          </div>
+          <div>
+            <div>
+              <label htmlFor="_nativeFee">_nativeFee:</label>
+              <input
+                type="text"
+                id="_nativeFee"
+                name="_nativeFee"
+                value={formValues._nativeFee}
+                onChange={handleChange}
+              />
+              <div>
+                <label htmlFor="_lzTokenFee">_lzTokenFee:</label>
+                <input
+                  type="text"
+                  id="_lzTokenFee"
+                  name="_lzTokenFee"
+                  value={formValues._lzTokenFee}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
             <label htmlFor="refundAddress">refundAddress:</label>
             <input
               type="text"
@@ -106,26 +160,7 @@ const WhitelistForm = ({ data, signer, provider, chainId }) => {
               onChange={handleChange}
             />
           </div>
-          <div>
-            <label htmlFor="zroPaymentAddress">zroPaymentAddress:</label>
-            <input
-              type="text"
-              id="zroPaymentAddress"
-              name="zroPaymentAddress"
-              value={formValues.zroPaymentAddress}
-              onChange={handleChange}
-            />
-          </div>
-          <div>
-            <label htmlFor="_adapterParams">_adapterParams:</label>
-            <input
-              type="text"
-              id="_adapterParams"
-              name="_adapterParams"
-              value={formValues._adapterParams}
-              onChange={handleChange}
-            />
-          </div>
+
           <button type="submit">Submit</button>
         </form>
       ) : (
